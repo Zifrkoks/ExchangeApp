@@ -6,6 +6,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.security.auth.message.AuthException;
 import jakarta.validation.ValidationException;
@@ -48,22 +49,16 @@ public class JwtAuthService implements AuthService {
             throw new AuthException("auth error");
         }
     }
-    
+    @Transactional
     public AuthResponse signup(RegisterRequest request) 
     throws AuthException{
 
         if (userRepository.findByUsername(request.getUsername()).isPresent())
             throw new AuthException("user with this name already exists");
-        if (userRepository.findByEmail(request.getEmail()).isPresent())
-            throw new AuthException("user with this email already exists");
-        if (userRepository.findByPhoneNumber(request.getPhone()).isPresent())
-            throw new AuthException("user with this phone number already exists");
         User user = User
             .builder()
             .username(request.getUsername())
             .password(passwordEncoder.encode(request.getPassword()))
-            .email(request.getEmail())
-            .phoneNumber(request.getPhone())
             .build();
             try {
                 userRepository.save(user);
@@ -73,7 +68,7 @@ public class JwtAuthService implements AuthService {
             String token = jwtTokenProvider.generateToken(user.getUsername());
             return AuthResponse.builder().token(token).build();
     }
-
+    @Transactional
     public AuthResponse changePassword(String token,ChangePasswordRequest request) 
         throws AuthException{
         try {
